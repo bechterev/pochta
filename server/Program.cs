@@ -32,12 +32,11 @@ namespace server
         }
         public IConfiguration Configuration { get; }
         public void ConfigureServices(IServiceCollection services)
-        {
+        { 
             string condb = Configuration.GetConnectionString("DefaultConnection");
             services.AddDbContext<bdContext>(options =>
-                options.UseSqlServer(condb));
+                options.UseSqlite(condb));
             services.AddSignalR();
-
         }
         public void Configure(IApplicationBuilder application, IWebHostEnvironment env)
         {

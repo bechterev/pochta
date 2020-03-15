@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Threading.Tasks;
 using System.IO;
+using System.Collections.Generic;
 
 namespace client
 {
@@ -70,7 +71,7 @@ namespace client
                     else
                     {
                         r.Dispose();
-                     
+
                     }
                 };
         }
@@ -105,11 +106,46 @@ namespace client
             StreamWriter stream = File.AppendText(_pathstorage);
             stream.WriteLine(name + ":" + mess);
             stream.Close();
-            connection.InvokeCoreAsync("SendMessage", args: new[] { name, mess });
-            connection.On("ReceiveMessage", (string name, string message) =>
+
+            List<string> lines = new List<string>();
+
+            foreach (string line in File.ReadLines(_pathstorage))
             {
-                Console.WriteLine(name + ":" + message);
-            });
+                lines.Add(line);
+            }
+            try
+            {
+                connection.Remove("ReceiveMessage");
+                connection.Remove("Receive");
+                connection.InvokeCoreAsync("SendMessage", args: new[] { lines });
+                File.Delete(_pathstorage);
+                connection.On("ReceiveMessage", (string name, string message) =>
+                {
+                    Console.WriteLine(name + ":" + message);     
+                });
+                
+                connection.On("Receive",(List<string> l)=>{
+                    foreach(string st in l){
+                        int a=st.IndexOf("Пользователь");
+                        Console.Write(st.Substring(0,a));
+                        int b=st.IndexOf("Время сообщения",a);
+                        Console.ForegroundColor=ConsoleColor.Green;
+                        Console.Write(st.Substring(a,b-a));
+                        int c=st.IndexOf("Сообщение");
+                        Console.ForegroundColor=ConsoleColor.Cyan;
+                        Console.Write(st.Substring(b,c-b));   
+                        Console.ForegroundColor=ConsoleColor.Gray;
+                        Console.WriteLine(st.Substring(c,st.Length-c));
+                        Console.ResetColor();                     
+                    }
+                    
+                });
+                
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("К сожалению ваши сообщения не добавлены на сервер, по пробуйте позже т.к. " + ex.Message);
+            }
             Console.WriteLine("Для выхода нажмите клавишу 'esc'");
             b = Console.ReadKey();
             if (b.Key == ConsoleKey.Escape)
